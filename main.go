@@ -128,7 +128,7 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	answer := tgbotapi.InlineConfig{
 		InlineQueryID: update.InlineQuery.ID,
 		Results:       []interface{}{result},
-		CacheTime:     0,
+		CacheTime:     1,
 		IsPersonal:    true,
 	}
 
