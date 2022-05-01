@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	DotInnerSize = 4
+	DotInnerSize = 6
 	DotPadding   = 1
 	DotSize      = DotInnerSize + 2*DotPadding
 )
@@ -19,7 +19,7 @@ const (
 // Resource limits
 const (
 	MaxChars = 100
-	MaxWidth = 8192
+	MaxWidth = 10922
 )
 
 var Font font.Face
