@@ -19,6 +19,11 @@ func init() {
 }
 
 func GifHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	speed, err := strconv.ParseFloat(r.URL.Query().Get("speed"), 64)
 	if err != nil {
 		http.NotFound(w, r)
@@ -53,12 +58,11 @@ func GifHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Content-Type", "image/gif")
-	w.Header().Add("Cache-Control", "max-age=1, s-maxage=3600, public, immutable, stale-while-revalidate")
 	err = gif.EncodeAll(w, anim)
 	if err != nil {
 		log.ErrorLogger.Print("gif/http: ", err)
 		log.WarningLogger.Print("could not encode gif or write http response")
-		// just in case EncodeAll did not write anything
+		// just in case nothing was written
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
