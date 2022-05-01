@@ -114,13 +114,13 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	imgURL := url.URL{
 		Scheme:   "https",
 		Host:     imgHost,
-		Path:     gifPath,
+		Path:     mp4Path,
 		RawQuery: params.Encode(),
 	}
 
 	imgURLStr := imgURL.String()
 
-	result := tgbotapi.NewInlineQueryResultGIF(imgURL.RawQuery, imgURLStr)
+	result := tgbotapi.NewInlineQueryResultMPEG4GIF(imgURL.RawQuery, imgURLStr)
 	result.ThumbURL = imgURLStr
 
 	// log.Println(gif)
