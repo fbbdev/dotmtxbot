@@ -6,16 +6,12 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-ExecStart=/home/dotmtxbot/dotmtxbot/dotmtxbot
-
-User=dotmtxbot
-Group=dotmtxbot
-WorkingDirectory=/home/dotmtxbot/dotmtxbot
-
-EnvironmentFile=/etc/dotmtxbot.conf
+ExecStart=%h/bin/dotmtxbot
+WorkingDirectory=%h/dotmtxbot
+EnvironmentFile=%h/.config/dotmtxbot.conf
 
 Restart=always
 RestartSec=30s
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

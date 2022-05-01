@@ -2,8 +2,13 @@
 
 set -e
 
-git --work-tree ~dotmtxbot/dotmtxbot --git-dir ~dotmtxbot/dotmtxbot.git checkout -f
-cd ~dotmtxbot/dotmtxbot
-go get -u
-go mod tidy
-go build
+git --work-tree "../dotmtxbot" --git-dir "." checkout -f
+
+if ! cmp "../dotmtxbot/config/post-update" "./hooks/post-update" >/dev/null 2>&1; then
+    echo "updating post-update hook script"
+    cp -a "../dotmtxbot/config/post-update" "./hooks/post-update"
+    exec "./hooks/post-update" "$@"
+fi
+
+cd "../dotmtxbot"
+exec "config/setup.sh"
