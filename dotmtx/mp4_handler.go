@@ -52,8 +52,8 @@ func Mp4Handler(w http.ResponseWriter, r *http.Request) {
 	ffmpeg := exec.CommandContext(
 		r.Context(),
 		"ffmpeg",
-		"-hide_banner",
-		"-loglevel", "error",
+		// "-hide_banner",
+		// "-loglevel", "error",
 		"-f", "gif",
 		"-i", "pipe:",
 		"-movflags", "frag_keyframe+empty_moov",
