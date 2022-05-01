@@ -11,10 +11,6 @@ import (
 )
 
 const (
-	Path = "/dotmtx"
-)
-
-const (
 	DotInnerSize = 4
 	DotPadding   = 1
 	DotSize      = DotInnerSize + 2*DotPadding

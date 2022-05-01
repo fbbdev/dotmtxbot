@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"regexp"
@@ -14,11 +15,29 @@ import (
 )
 
 var imgHost string
+var imgServiceAddr string
+var gifPath string
+var mp4Path string
 
 func init() {
 	imgHost = os.Getenv("DOTMTXBOT_IMG_HOST")
 	if imgHost == "" {
 		imgHost = "localhost:3000"
+	}
+
+	imgServiceAddr = os.Getenv("DOTMTXBOT_IMG_SERVICE_ADDR")
+	if imgServiceAddr == "" {
+		imgServiceAddr = "localhost:3000"
+	}
+
+	gifPath = os.Getenv("DOTMTXBOT_GIF_PATH")
+	if gifPath == "" {
+		gifPath = "/dotmtx.gif"
+	}
+
+	mp4Path = os.Getenv("DOTMTXBOT_MP4_PATH")
+	if gifPath == "" {
+		gifPath = "/dotmtx.mp4"
 	}
 }
 
@@ -95,7 +114,7 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	imgURL := url.URL{
 		Scheme:   "https",
 		Host:     imgHost,
-		Path:     dotmtx.Path,
+		Path:     gifPath,
 		RawQuery: params.Encode(),
 	}
 
@@ -135,6 +154,18 @@ func main() {
 	updateConfig.Timeout = 60
 
 	updates := bot.GetUpdatesChan(updateConfig)
+
+	// start http server
+	go func() {
+		http.HandleFunc(gifPath, dotmtx.GifHandler)
+		http.HandleFunc(mp4Path, dotmtx.Mp4Handler)
+
+		err := http.ListenAndServe(imgServiceAddr, nil)
+		if err != http.ErrServerClosed {
+			log.ErrorLogger.Print("http: ", err)
+			log.FatalLogger.Fatal("http server stopped")
+		}
+	}()
 
 	for update := range updates {
 		if update.Message != nil && update.Message.IsCommand() {
