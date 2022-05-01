@@ -92,10 +92,10 @@ func MakeGif(speed float64, width float64, blank float64, text string) (*gif.GIF
 	dotMatrixWidth := dotMatrix.Rect.Dx()
 	dotMatrixHeight := dotMatrix.Rect.Dy()
 
-	windowColumns := math.Ceil(width * float64(dotMatrixWidth))
+	windowColumns := math.Round(width * float64(dotMatrixWidth))
 	windowWidth := windowColumns*DotSize + 2*DotPadding
 
-	backingImageColumns := math.Ceil((1 + blank) * float64(dotMatrixWidth))
+	backingImageColumns := math.Round((1 + blank) * float64(dotMatrixWidth))
 	backingImageWidth := (backingImageColumns+windowColumns)*DotSize + 2*DotPadding
 	backingImageHeight := dotMatrixHeight*DotSize + 2*DotPadding
 
@@ -162,9 +162,8 @@ func MakeGif(speed float64, width float64, blank float64, text string) (*gif.GIF
 	dotMatrix = nil
 
 	// draw blank dots
-	blankWidth := math.Floor(blank * float64(dotMatrixWidth))
 	for y := 0; y < dotMatrixHeight; y++ {
-		for x := dotMatrixWidth; x < dotMatrixWidth+int(blankWidth); x++ {
+		for x := dotMatrixWidth; x < int(backingImageColumns); x++ {
 			for dy := 0; dy < DotInnerSize; dy++ {
 				for dx := 0; dx < DotInnerSize; dx++ {
 					backingImage.Pix[(2*DotPadding+y*DotSize+dy)*bimgStride+(2*DotPadding+x*DotSize+dx)] = 1
