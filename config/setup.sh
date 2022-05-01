@@ -18,5 +18,6 @@ mkdir -p "$HOME/.config/systemd/user"
 cp -a "config/dotmtxbot.service" "$HOME/.config/systemd/user"
 
 echo "enabling and restarting systemd service"
+systemctl --user daemon-reload
 systemctl --user enable dotmtxbot.service
 systemctl --user restart dotmtxbot.service

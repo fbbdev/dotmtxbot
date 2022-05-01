@@ -2,6 +2,7 @@
 
 set -e
 
+mkdir -p "../dotmtxbot"
 git --work-tree "../dotmtxbot" --git-dir "." checkout -f
 
 if ! cmp "../dotmtxbot/config/post-update" "./hooks/post-update" >/dev/null 2>&1; then
