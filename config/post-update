@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+git --work-tree ~dotmtxbot/dotmtxbot --git-dir ~dotmtxbot/dotmtxbot.git checkout -f
+cd ~dotmtxbot/dotmtxbot
+go get -u
+go mod tidy
+go build
