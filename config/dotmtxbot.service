@@ -1,0 +1,21 @@
+[Unit]
+Description=Dot Matrix Bot service
+After=network.target
+
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/home/dotmtxbot/dotmtxbot/dotmtxbot
+
+User=dotmtxbot
+Group=dotmtxbot
+WorkingDirectory=/home/dotmtxbot/dotmtxbot
+
+EnvironmentFile=/etc/dotmtxbot.conf
+
+Restart=always
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
