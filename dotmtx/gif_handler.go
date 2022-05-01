@@ -21,24 +21,24 @@ func init() {
 func GifHandler(w http.ResponseWriter, r *http.Request) {
 	speed, err := strconv.ParseFloat(r.URL.Query().Get("speed"), 64)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
 	width, err := strconv.ParseFloat(r.URL.Query().Get("width"), 64)
 	if err != nil || width <= 0 {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
 	blank, err := strconv.ParseFloat(r.URL.Query().Get("blank"), 64)
 	if err != nil || blank < 0 {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
 	if len(r.URL.Query().Get("text")) > MaxChars {
-		w.WriteHeader(http.StatusNotFound)
+		http.NotFound(w, r)
 		return
 	}
 
@@ -48,7 +48,8 @@ func GifHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.ErrorLogger.Print("MakeGif: ", err)
 		log.WarningLogger.Print("gif generation failed")
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Add("Content-Type", "image/gif")
@@ -58,6 +59,7 @@ func GifHandler(w http.ResponseWriter, r *http.Request) {
 		log.ErrorLogger.Print("gif/http: ", err)
 		log.WarningLogger.Print("could not encode gif or write http response")
 		// just in case EncodeAll did not write anything
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 }
