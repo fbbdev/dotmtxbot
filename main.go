@@ -53,11 +53,11 @@ func handleStart(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 }
 
-func handleUnknownCommand(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "I don't know that command")
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, text)
 	if _, err := bot.Send(msg); err != nil {
 		log.ErrorLogger.Print("tgbotapi: ", err)
-		log.WarningLogger.Printf("could not send message (update_id=%v, chat_id=%v)", update.UpdateID, msg.ChatID)
+		log.WarningLogger.Printf("could not send message (chat_id=%v)", chatID)
 	}
 }
 
@@ -141,8 +141,10 @@ func main() {
 			switch update.Message.Command() {
 			case "start":
 				go handleStart(bot, update)
+			case "haha":
+				go sendMessage(bot, update.Message.Chat.ID, "LOL haha classic")
 			default:
-				go handleUnknownCommand(bot, update)
+				go sendMessage(bot, update.Message.Chat.ID, "I don't know that command")
 			}
 		} else if update.InlineQuery != nil {
 			go handleInlineQuery(bot, update)
