@@ -11,7 +11,7 @@ WorkingDirectory=%h/dotmtxbot
 EnvironmentFile=%h/.config/dotmtxbot.conf
 
 Restart=always
-RestartSec=30s
+RestartSec=10s
 
 [Install]
 WantedBy=default.target
