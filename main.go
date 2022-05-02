@@ -148,6 +148,11 @@ func queryToURL(query string) (imgURL string, err error) {
 
 func handleRender(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	query := update.Message.CommandArguments()
+	if query == "" {
+		sendMessage(bot, update.Message.Chat.ID, "Some parameters are missing:\n/render [Speed] [Width] [Blank] [Text]\n\nJust ask if you need some /help")
+		return
+	}
+
 	imgURL, err := queryToURL(query)
 	if err != nil {
 		sendMessage(bot, update.Message.Chat.ID, err.Error())
