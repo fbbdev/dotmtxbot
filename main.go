@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -41,8 +43,19 @@ func init() {
 	}
 }
 
-const helpMessage = `Invoke me inline in your chat:
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	if _, err := bot.Send(msg); err != nil {
+		log.ErrorLogger.Print("tgbotapi: ", err)
+		log.WarningLogger.Printf("could not send message (chat_id=%v)", chatID)
+	}
+}
+
+const helpMessage = `Invoke me inline in any chat:
 @dotmtxbot [Speed] [Width] [Blank] [Text]
+
+Or in this chat:
+/render [Speed] [Width] [Blank] [Text]
 
 [Speed] is the number of characters scrolling out of the display in one second; use a negative value to reverse the scrolling direction.
 
@@ -52,14 +65,16 @@ const helpMessage = `Invoke me inline in your chat:
 
 [Text] is the text to display. Maximum length is %d characters.
 
-Try invoking me in this chat! Go to the chatbar and write:
-
+Try invoking me inline in this chat! Go to the chatbar and write:
 @dotmtxbot 4 1 1 HELLO %s
+
+You can also send me this message:
+/render 4 1 1 HELLO %s
 
 When everything works, I will send you a GIF you can post.
 When the parameters are wrong, I will send you nothing.
 When the generated GIF is too big, I will send a GIF with an error message.
-Sometimes, the GIF won't load even if everything worked. In such cases, try deleting all text and rewrite it. If it still doesn't work, you should try quitting telegram and reopening it or even cleaning Telegram's cache.
+Sometimes, the GIF won't load even if everything worked. This is a Telegram problem and I can do nothing to fix it, but you can use the /render command in this chat and then forward the GIF to someone else.
 
 PRIVACY NOTICE: your requests will never be stored nor traced back to you in any way by the bot. However, remember that this is a completely public service and you should never send private or personal data to this bot.
 The GIFs will be cached by a CDN to speed up delivery. Cached GIFs are only accessible by someone who knows the exact text they contain down to the smallest detail, so if they contain private data they should only be accessible by you. Let us stress again, however, that you should NEVER send private data to this bot. Our CDN, Cloudflare, may of course be able to access the GIFs that are stored in their caches, when required by the law. Here is their privacy policy:
@@ -67,50 +82,53 @@ The GIFs will be cached by a CDN to speed up delivery. Cached GIFs are only acce
 https://www.cloudflare.com/trust-hub/privacy-and-data-protection/`
 
 func handleHelp(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	username := strings.ToUpper(update.SentFrom().UserName)
+
 	msg := tgbotapi.NewMessage(
 		update.Message.Chat.ID,
-		fmt.Sprintf(helpMessage, dotmtx.MaxChars, strings.ToUpper(update.SentFrom().UserName)),
+		fmt.Sprintf(helpMessage, dotmtx.MaxChars, username, username),
 	)
 
 	msg.DisableWebPagePreview = true
 
 	if _, err := bot.Send(msg); err != nil {
 		log.ErrorLogger.Print("tgbotapi: ", err)
-		log.WarningLogger.Printf("could not send message (update_id=%v, chat_id=%v)", update.UpdateID, msg.ChatID)
+		log.WarningLogger.Printf("could not send help message (update_id=%v, chat_id=%v)", update.UpdateID, msg.ChatID)
 	}
 }
 
-func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) {
-	msg := tgbotapi.NewMessage(chatID, text)
-	if _, err := bot.Send(msg); err != nil {
-		log.ErrorLogger.Print("tgbotapi: ", err)
-		log.WarningLogger.Printf("could not send message (chat_id=%v)", chatID)
-	}
-}
+//lint:ignore ST1005 the string must be sent as a chat message
+var errNotEnoughParams = errors.New("Some parameters are missing! I need [Speed] [Width] [Blank] [Text]. Try asking for /help if you don't know how to invoke me.")
 
-func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	re := regexp.MustCompile(`^\s*(\S+\s+\S+\s+\S+)\s+(.*)$`)
-	match := re.FindStringSubmatch(update.InlineQuery.Query)
+//lint:ignore ST1005 the string must be sent as a chat message
+var errInvalidParams = errors.New("Some parameters are not valid. [Speed], [Width] and [Blank] must be numbers. [Width] must not be negative and [Blank] must be greater than zero.")
 
-	// log.InfoLogger.Println(match)
+//lint:ignore ST1005 the string must be sent as a chat message
+var errTextTooLong = fmt.Errorf("[Text] is too long. The limit is %v characters.", dotmtx.MaxChars)
+
+func queryToURL(query string) (imgURL string, err error) {
+	re := regexp.MustCompile(`^\s*(\S+\s+\S+\s+\S+)\s+(.+)$`)
+	match := re.FindStringSubmatch(query)
+
+	// log.InfoLogger.Print("query string matched: ", match)
 
 	if match == nil || match[2] == "" {
-		return
+		return "", errNotEnoughParams
 	}
 
 	var speed float64
 	var width float64
 	var blank float64
 
-	if _, err := fmt.Sscan(match[1], &speed, &width, &blank); err != nil || width <= 0 || blank < 0 {
-		return
+	if _, ierr := fmt.Sscan(match[1], &speed, &width, &blank); ierr != nil || width <= 0 || blank < 0 {
+		return "", errInvalidParams
 	}
 
-	// log.InfoLogger.Println(speed, width, blank)
+	// log.InfoLogger.Print("speed=", speed, ", width=", width, ", blank=", blank)
 
 	text := match[2]
 	if len(text) > dotmtx.MaxChars {
-		return
+		return "", errTextTooLong
 	}
 
 	params := url.Values{}
@@ -119,19 +137,45 @@ func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	params.Set("blank", fmt.Sprint(blank))
 	params.Set("text", text)
 
-	imgURL := url.URL{
+	imgURLInfo := url.URL{
 		Scheme:   "https",
 		Host:     imgHost,
 		Path:     mp4Path,
 		RawQuery: params.Encode(),
 	}
 
-	imgURLStr := imgURL.String()
+	return imgURLInfo.String(), nil
+}
 
-	result := tgbotapi.NewInlineQueryResultMPEG4GIF(imgURL.RawQuery, imgURLStr)
-	result.ThumbURL = imgURLStr
+func handleRender(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	query := update.Message.CommandArguments()
+	imgURL, err := queryToURL(query)
+	if err != nil {
+		sendMessage(bot, update.Message.Chat.ID, err.Error())
+		return
+	}
 
-	// log.Println(gif)
+	anim := tgbotapi.NewInputMediaAnimation(tgbotapi.FileURL(imgURL))
+	anim.Thumb = tgbotapi.FileURL(imgURL)
+
+	msg := tgbotapi.NewMediaGroup(update.Message.Chat.ID, []interface{}{anim})
+
+	if _, err := bot.SendMediaGroup(msg); err != nil {
+		log.ErrorLogger.Print("tgbotapi: ", err)
+		log.WarningLogger.Printf("could not send rendered GIF (update_id=%v, chat_id=%v)", update.UpdateID, msg.ChatID)
+	}
+}
+
+func handleInlineQuery(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	imgURL, err := queryToURL(update.InlineQuery.Query)
+	if err != nil {
+		return
+	}
+
+	result := tgbotapi.NewInlineQueryResultMPEG4GIF(fmt.Sprintf("%x", md5.Sum([]byte(imgURL))), imgURL)
+	result.ThumbURL = imgURL
+
+	// log.InfoLogger.Print(result)
 
 	answer := tgbotapi.InlineConfig{
 		InlineQueryID: update.InlineQuery.ID,
@@ -180,6 +224,8 @@ func main() {
 			switch update.Message.Command() {
 			case "start", "help":
 				go handleHelp(bot, update)
+			case "render":
+				go handleRender(bot, update)
 			case "haha":
 				go sendMessage(bot, update.Message.Chat.ID, "LOL haha classic")
 			default:
