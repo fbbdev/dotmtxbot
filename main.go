@@ -42,15 +42,19 @@ func init() {
 }
 
 const helpMessage = `Invoke me inline in your chat:
-@dotmtxbot Speed Width Blank Text
+@dotmtxbot [Speed] [Width] [Blank] [Text]
 
-Speed is the number of characters scrolling out of the display in one second; use a negative value to reverse the scrolling direction.
+[Speed] is the number of characters scrolling out of the display in one second; use a negative value to reverse the scrolling direction.
 
-Width is a number specifying the image width multiplier: when Width is 1, the image has the same width as the text. When 0.5, half the text. When 2, twice the text.
+[Width] is a number specifying the image width multiplier: when Width is 1, the image has the same width as the text. When 0.5, half the text. When 2, twice the text.
 
-Blank is a number specifying the blank space multiplier: when Blank is 1, the text is followed by a blank space of the same width. When 0.5, half the width and so on.
+[Blank] is a number specifying the blank space multiplier: when Blank is 1, the text is followed by a blank space of the same width. When 0.5, half the width and so on.
 
-Text is the text to display. Maximum length is %d characters.
+[Text] is the text to display. Maximum length is %d characters.
+
+Try invoking me in this chat! Go to the chatbar and write:
+
+@dotmtxbot 4 1 1 HELLO %s
 
 When everything works, I will send you a GIF you can post.
 When the parameters are wrong, I will send you nothing.
@@ -60,11 +64,7 @@ Sometimes, the GIF won't load even if everything worked. In such cases, try dele
 PRIVACY NOTICE: your requests will never be stored nor traced back to you in any way by the bot. However, remember that this is a completely public service and you should never send private or personal data to this bot.
 The GIFs will be cached by a CDN to speed up delivery. Cached GIFs are only accessible by someone who knows the exact text they contain down to the smallest detail, so if they contain private data they should only be accessible by you. Let us stress again, however, that you should NEVER send private data to this bot. Our CDN, Cloudflare, may of course be able to access the GIFs that are stored in their caches, when required by the law. Here is their privacy policy:
 
-https://www.cloudflare.com/trust-hub/privacy-and-data-protection/
-
-Try invoking me in this chat by writing:
-
-@dotmtxbot 4 1 1 HELLO %s`
+https://www.cloudflare.com/trust-hub/privacy-and-data-protection/`
 
 func handleStart(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	msg := tgbotapi.NewMessage(
