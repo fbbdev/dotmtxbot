@@ -66,7 +66,7 @@ The GIFs will be cached by a CDN to speed up delivery. Cached GIFs are only acce
 
 https://www.cloudflare.com/trust-hub/privacy-and-data-protection/`
 
-func handleStart(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func handleHelp(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	msg := tgbotapi.NewMessage(
 		update.Message.Chat.ID,
 		fmt.Sprintf(helpMessage, dotmtx.MaxChars, strings.ToUpper(update.SentFrom().UserName)),
@@ -178,8 +178,8 @@ func main() {
 	for update := range updates {
 		if update.Message != nil && update.Message.IsCommand() {
 			switch update.Message.Command() {
-			case "start":
-				go handleStart(bot, update)
+			case "start", "help":
+				go handleHelp(bot, update)
 			case "haha":
 				go sendMessage(bot, update.Message.Chat.ID, "LOL haha classic")
 			default:
