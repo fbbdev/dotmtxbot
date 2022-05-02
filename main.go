@@ -155,12 +155,9 @@ func handleRender(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 	}
 
-	anim := tgbotapi.NewInputMediaAnimation(tgbotapi.FileURL(imgURL))
-	anim.Thumb = tgbotapi.FileURL(imgURL)
+	msg := tgbotapi.NewAnimation(update.Message.Chat.ID, tgbotapi.FileURL(imgURL))
 
-	msg := tgbotapi.NewMediaGroup(update.Message.Chat.ID, []interface{}{anim})
-
-	if _, err := bot.SendMediaGroup(msg); err != nil {
+	if _, err := bot.Send(msg); err != nil {
 		log.ErrorLogger.Print("tgbotapi: ", err)
 		log.WarningLogger.Printf("could not send rendered GIF (update_id=%v, chat_id=%v)", update.UpdateID, msg.ChatID)
 	}
