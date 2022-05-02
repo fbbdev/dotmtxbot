@@ -68,12 +68,14 @@ Or in this chat:
 Try invoking me inline in this chat! Go to the chatbar and write:
 @dotmtxbot 4 1 1 HELLO %s
 
-You can also send me this message:
+When everything works, a GIF will pop up which you can post.
+When the parameters are wrong, nothing will pop up.
+When the generated GIF is too big, I will send a GIF with an error message.
+
+You can also try sending me this message:
 /render 4 1 1 HELLO %s
 
-When everything works, I will send you a GIF you can post.
-When the parameters are wrong, I will send you nothing.
-When the generated GIF is too big, I will send a GIF with an error message.
+I will reply with a GIF or a message explaining what went wrong.
 
 PRIVACY NOTICE: your requests will never be stored nor traced back to you in any way by the bot. However, remember that this is a completely public service and you should never send private or personal data to this bot.
 The GIFs will be cached by a CDN to speed up delivery. Cached GIFs are only accessible by someone who knows the exact text they contain down to the smallest detail, so if they contain private data they should only be accessible by you. Let us stress again, however, that you should NEVER send private data to this bot. Our CDN, Cloudflare, may of course be able to access the GIFs that are stored in their caches, when required by the law. Here is their privacy policy:
