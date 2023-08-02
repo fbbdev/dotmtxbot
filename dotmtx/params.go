@@ -6,7 +6,8 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 
-	"petbots.fbbdev.it/dotmtxbot/bdf"
+	"github.com/zachomedia/go-bdf"
+
 	"petbots.fbbdev.it/dotmtxbot/log"
 )
 

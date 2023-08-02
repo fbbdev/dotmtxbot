@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"image"
-	"image/color"
 	"strconv"
 	"strings"
 
@@ -18,7 +17,7 @@ type Character struct {
 	Name       string
 	Encoding   rune
 	Advance    [2]int
-	Mask       *image.Alpha
+	Alpha      *image.Alpha
 	LowerPoint [2]int
 }
 
@@ -27,6 +26,7 @@ type Font struct {
 	Size        int
 	PixelSize   int
 	DPI         [2]int
+	BPP         int
 	Ascent      int
 	Descent     int
 	CapHeight   int
@@ -47,7 +47,7 @@ func (f *Font) NewFace() font.Face {
 	}
 }
 
-func (f *Font) Lookup(r rune) *Character {
+func (f *Font) lookup(r rune) *Character {
 	c, ok := f.CharMap[r]
 	if !ok {
 		c, ok = f.CharMap[f.DefaultChar]
@@ -86,15 +86,19 @@ scan:
 			if err != nil {
 				return err
 			}
+
+			if len(components) > 4 {
+				f.BPP, err = strconv.Atoi(components[4])
+				if err != nil {
+					return err
+				}
+			}
 		case "CHARSET_REGISTRY":
 			registry = components[1]
 		case "CHARSET_ENCODING":
 			encoding = components[1]
 		case "PIXEL_SIZE":
 			f.PixelSize, err = strconv.Atoi(components[1])
-			if err != nil {
-				return err
-			}
 		case "FONT_ASCENT":
 			f.Ascent, err = strconv.Atoi(components[1])
 			if err != nil {
@@ -157,6 +161,10 @@ func findCharmap(requested string) *charmap.Charmap {
 	return charMap
 }
 
+func bitAt(xs []byte, i int) byte {
+	return (xs[i>>3] >> (7 - (i % 8))) & 1
+}
+
 func Parse(data []byte) (*Font, error) {
 	r := bytes.NewReader(data)
 	s := bufio.NewScanner(r)
@@ -164,6 +172,7 @@ func Parse(data []byte) (*Font, error) {
 	f := Font{
 		CharMap:     make(map[rune]*Character),
 		DefaultChar: 32,
+		BPP:         1,
 	}
 
 	var err error
@@ -235,9 +244,16 @@ func Parse(data []byte) (*Font, error) {
 				f.Characters[char].LowerPoint[0] = lx
 				f.Characters[char].LowerPoint[1] = ly
 
-				f.Characters[char].Mask = image.NewAlpha(image.Rectangle{
-					Max: image.Point{w, h},
-				})
+				f.Characters[char].Alpha = &image.Alpha{
+					Stride: w,
+					Rect: image.Rectangle{
+						Max: image.Point{
+							X: w,
+							Y: h,
+						},
+					},
+					Pix: make([]byte, w*h),
+				}
 			case "BITMAP":
 				inBitmap = true
 				row = -1
@@ -254,12 +270,13 @@ func Parse(data []byte) (*Font, error) {
 				return nil, err
 			}
 
-			for i := 0; i < f.Characters[char].Mask.Stride; i++ {
+			for i := 0; i < f.Characters[char].Alpha.Stride; i++ {
 				val := byte(0x00)
-				if b[i/8]&(1<<uint(7-i%8)) != 0 {
-					val = 0xff
+				for j := 0; j < f.BPP; j++ {
+					val <<= 1
+					val |= bitAt(b, i*f.BPP+j)
 				}
-				f.Characters[char].Mask.SetAlpha(i, row, color.Alpha{val})
+				f.Characters[char].Alpha.Pix[row*f.Characters[char].Alpha.Stride+i] = byte(uint32(val) * 0xff / ((1 << f.BPP) - 1))
 			}
 		}
 	}
@@ -284,38 +301,40 @@ func (f *Face) Kern(_, _ rune) fixed.Int26_6 {
 }
 
 func (f *Face) Glyph(dot fixed.Point26_6, r rune) (dr image.Rectangle, mask image.Image, maskp image.Point, advance fixed.Int26_6, ok bool) {
-	c := f.Font.Lookup(r)
+	c := f.Font.lookup(r)
 	if c == nil {
 		return image.Rectangle{}, nil, image.Point{}, 0, false
 	}
 
-	x := dot.X.Floor() + c.LowerPoint[0]
-	y := dot.Y.Floor() - c.LowerPoint[1]
+	mask = c.Alpha
+
+	x := int(dot.X)>>6 + c.LowerPoint[0]
+	y := int(dot.Y)>>6 - c.LowerPoint[1]
 	dr = image.Rectangle{
 		Min: image.Point{
 			X: x,
-			Y: y - c.Mask.Rect.Dy(),
+			Y: y - c.Alpha.Rect.Max.Y,
 		},
 		Max: image.Point{
-			X: x + c.Mask.Rect.Dx(),
+			X: x + c.Alpha.Stride,
 			Y: y,
 		},
 	}
 
-	return dr, c.Mask, image.Point{}, fixed.I(c.Advance[0]), true
+	return dr, mask, image.Point{Y: 0}, fixed.I(c.Advance[0]), true
 }
 
 func (f *Face) GlyphBounds(r rune) (bounds fixed.Rectangle26_6, advance fixed.Int26_6, ok bool) {
-	c := f.Font.Lookup(r)
+	c := f.Font.lookup(r)
 	if c == nil {
 		return fixed.R(0, -f.Font.Ascent, 0, +f.Font.Descent), 0, false
 	}
 
-	return fixed.R(c.LowerPoint[0], -f.Font.Ascent, c.LowerPoint[0]+c.Mask.Rect.Dx(), f.Font.Descent), fixed.I(c.Advance[0]), true
+	return fixed.R(c.LowerPoint[0], -f.Font.Ascent, c.LowerPoint[0]+c.Alpha.Rect.Dx(), f.Font.Descent), fixed.I(c.Advance[0]), true
 }
 
 func (f *Face) GlyphAdvance(r rune) (advance fixed.Int26_6, ok bool) {
-	c := f.Font.Lookup(r)
+	c := f.Font.lookup(r)
 	if c == nil {
 		return 0, false
 	}

@@ -2,10 +2,6 @@
 
 set -e
 
-echo "updating dependencies"
-go get -u
-go mod tidy
-
 echo "building bot binary"
 go build
 
