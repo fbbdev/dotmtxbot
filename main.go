@@ -16,15 +16,15 @@ import (
 	"petbots.fbbdev.it/dotmtxbot/log"
 )
 
-var imgHost string
+var publicHost string
 var imgServiceAddr string
 var gifPath string
 var mp4Path string
 
 func init() {
-	imgHost = os.Getenv("DOTMTXBOT_IMG_HOST")
-	if imgHost == "" {
-		imgHost = "localhost:3000"
+	publicHost = os.Getenv("DOTMTXBOT_PUBLIC_HOST")
+	if publicHost == "" {
+		publicHost = "localhost:3000"
 	}
 
 	imgServiceAddr = os.Getenv("DOTMTXBOT_IMG_SERVICE_ADDR")
@@ -140,7 +140,7 @@ func queryToURL(query string) (imgURL string, err error) {
 
 	imgURLInfo := url.URL{
 		Scheme:   "https",
-		Host:     imgHost,
+		Host:     publicHost,
 		Path:     mp4Path,
 		RawQuery: params.Encode(),
 	}
