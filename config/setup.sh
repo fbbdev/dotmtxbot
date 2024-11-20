@@ -3,7 +3,7 @@
 set -e
 
 echo "building bot binary"
-go build
+go build -a -ldflags="-s -w"
 
 echo "installing bot"
 mkdir -p "$HOME/bin"
